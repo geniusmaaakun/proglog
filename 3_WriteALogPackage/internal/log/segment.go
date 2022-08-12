@@ -9,13 +9,20 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+//ストアとインデックスをまとめている抽象的概念
+//ログがアクティブなセグメントにレコードを追加する場合、セグメントはデータをストアに書き込み、インデックスに新たなエントリを追加する
+//読み取りの場合、セグメントはインデックスからエントリを検索し、ストアからデータを取り出す必要がある
+
+//セグメントはストアとインデックスを呼び出す必要があるためフィールドとして保持
 type segment struct {
 	store                  *store
 	index                  *index
-	baseOffset, nextOffset uint64
+	baseOffset, nextOffset uint64 //相対的なオフセット計算のオフセット、新たなレコードを追加する際のオフセット
 	config                 Config
 }
 
+//ログは現在のアクティブセグメントが最大サイズに達した時など、新たなセグメントを追加する必要がある時に呼び出す
+//まずストアファイルインデックスファイルを開く。ファイルが存在しない場合は作成
 func newSegment(dir string, baseOffset uint64, c Config) (*segment, error) {
 	s := &segment{
 		baseOffset: baseOffset,
@@ -51,6 +58,11 @@ func newSegment(dir string, baseOffset uint64, c Config) (*segment, error) {
 	return s, nil
 }
 
+//セグメントにレコードを書き込み、新たに追加されたレコードのオフセットを返す
+//ログはAPIレスポンスでそのオフセットを返す
+//セグメントはデータをストアに追加し、その後インデックスエントリを追加するという２ステップの処理でレコードを追加する
+//失敗した場合はゴミとして残る設計になっている
+//インデックスのオフセットはbaseに対する相対的なもので、相対オフセットを計算する
 func (s *segment) Append(record *api.Record) (offset uint64, err error) {
 	cur := s.nextOffset
 	record.Offset = cur
@@ -73,6 +85,9 @@ func (s *segment) Append(record *api.Record) (offset uint64, err error) {
 	return cur, nil
 }
 
+//指定されたオフセットのレコードを返す
+//書き込みと同様にレコードを読み込むために、セグメントは最初に絶対オフセットを相対オフセットに変換し、関連するインデックスエントリの内容を取得する
+//インデックスエントリから位置を取得すると、セグメントはストア内のレコード位置から適切な量のデータを読み出せる
 func (s *segment) Read(off uint64) (*api.Record, error) {
 	_, pos, err := s.index.Read(int64(off - s.baseOffset))
 	if err != nil {
@@ -87,12 +102,16 @@ func (s *segment) Read(off uint64) (*api.Record, error) {
 	return record, err
 }
 
+//セグメントが最大サイズに達したかどうか
+//ストアまたは、インデックスへの書き込みがいっぱいになったかどうかで判定
+//このメソッドを使って新たなセグメントを作成する必要があるのかを判定する
 func (s *segment) IsMaxed() bool {
 	return s.store.size >= s.config.Segment.MaxStoreBytes ||
 		s.index.size >= s.config.Segment.MaxIndexBytes ||
 		s.index.isMaxed()
 }
 
+//σグメントを閉じてインデックスファイルとストアファイルを削除
 func (s *segment) Remove() error {
 	if err := s.Close(); err != nil {
 		return err

@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
+//サーバーを作成
 func NewHTTPServer(addr string) *http.Server {
 	httpsrv := newHTTPServer()
 	r := mux.NewRouter()
@@ -44,21 +45,25 @@ type ConsumeResponse struct {
 	Record Record `json:"record"`
 }
 
+//レコードの保存
 func (s *httpServer) handleProduce(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var req ProduceRequest
+	//リクエストを受け取り
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	//追加
 	off, err := s.Log.Append(req.Record)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	res := ProduceResponse{Offset: off}
+	//結果を取得
 	err = json.NewEncoder(w).Encode(res)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -66,15 +71,18 @@ func (s *httpServer) handleProduce(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//レコードの取得
 func (s *httpServer) handleConsume(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var req ConsumeRequest
+	//リクエストを構造体にアンマーシャルする
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	//結果を得る
 	record, err := s.Log.Read(req.Offset)
 	if err == ErrOffsetNotFound {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -85,6 +93,7 @@ func (s *httpServer) handleConsume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res := ConsumeResponse{Record: record}
+	//レスポンスにマーシャルする
 	err = json.NewEncoder(w).Encode(res)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

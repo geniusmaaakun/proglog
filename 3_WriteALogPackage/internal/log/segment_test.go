@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+//セグメントにレコードを追加し、同じレコードを読み出し、最終的にストアとインデックスの両方に設定された最大サイズに達するのかをテスト
 func TestSegment(t *testing.T) {
 	dir, _ := os.MkdirTemp("", "segment-test")
 	defer os.RemoveAll(dir)

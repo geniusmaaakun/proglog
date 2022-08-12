@@ -1,5 +1,7 @@
 package server
 
+//コミットログ
+
 import (
 	"fmt"
 	"sync"
@@ -14,6 +16,7 @@ func NewLog() *Log {
 	return &Log{}
 }
 
+//レコードをログに追加する
 func (c *Log) Append(record Record) (uint64, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -22,6 +25,7 @@ func (c *Log) Append(record Record) (uint64, error) {
 	return record.Offset, nil
 }
 
+//indexを与えてレコードを読み出す
 func (c *Log) Read(offset uint64) (Record, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

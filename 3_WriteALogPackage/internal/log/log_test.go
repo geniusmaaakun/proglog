@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+//テストのテーブルを定義し、ログのテストをする。書き込みや読み出しなど
 func TestLog(t *testing.T) {
 	for scenario, fn := range map[string]func(
 		t *testing.T, log *Log,
@@ -35,6 +36,7 @@ func TestLog(t *testing.T) {
 	}
 }
 
+//ログの追加のテスト
 func testAppendRead(t *testing.T, log *Log) {
 	append := &api.Record{
 		Value: []byte("hello world"),
@@ -49,6 +51,7 @@ func testAppendRead(t *testing.T, log *Log) {
 	require.NoError(t, log.Close())
 }
 
+//オフセットの半以外のオフセットを読み取ろうとするとエラーを返すテスト
 func testOutOfRangeErr(t *testing.T, log *Log) {
 	read, err := log.Read(1)
 	require.Nil(t, read)
@@ -56,6 +59,10 @@ func testOutOfRangeErr(t *testing.T, log *Log) {
 	require.NoError(t, log.Close())
 }
 
+//ログを作成した時に、以前のログのインスタンスが保存したデータからログが再開するかをテスト
+//もとのログにレコードを3つ追加してから　クローズ
+//次に古いログと同じディレクトリを指定して新たなログのインスタンスを作成する
+//最後に新たなログが元のログによって保存されたデータから自分自身を設定したことを確認
 func testInitExisting(t *testing.T, o *Log) {
 	append := &api.Record{
 		Value: []byte("hello world"),
@@ -85,6 +92,7 @@ func testInitExisting(t *testing.T, o *Log) {
 	require.NoError(t, n.Close())
 }
 
+//ログのスナップショットを作成したり、ログを復元できたりするように、ディスクに保存されているそのままのログを読み込めるかをテスト
 func testReader(t *testing.T, log *Log) {
 	append := &api.Record{
 		Value: []byte("hello world"),
@@ -104,6 +112,7 @@ func testReader(t *testing.T, log *Log) {
 	require.NoError(t, log.Close())
 }
 
+//ログを切り詰めて、必要のないセグメントを削除できるかをテスト
 func testTruncate(t *testing.T, log *Log) {
 	append := &api.Record{
 		Value: []byte("hello world"),

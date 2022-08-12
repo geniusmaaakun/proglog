@@ -13,8 +13,10 @@ func TestIndex(t *testing.T) {
 	require.NoError(t, err)
 	defer os.Remove(f.Name())
 
+	//設定
 	c := Config{}
 	c.Segment.MaxIndexBytes = 1024
+	//書き込む前にファイルのサイズを大きくしておかないとバイトスライスのメモリ領域が半以外のエラーを発生させる可能性があるため
 	idx, err := newIndex(f, c)
 	require.NoError(t, err)
 	_, _, err = idx.Read(-1)
@@ -30,6 +32,7 @@ func TestIndex(t *testing.T) {
 	}
 
 	for _, want := range entries {
+		//書き込みと読み込みが一致するか確認
 		err = idx.Write(want.Off, want.Pos)
 		require.NoError(t, err)
 
