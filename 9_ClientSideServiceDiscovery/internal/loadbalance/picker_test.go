@@ -13,6 +13,8 @@ import (
 	"github.com/travisjeffery/proglog/internal/loadbalance"
 )
 
+//リゾルバがサーバーを発見し、利用可能なサブコネクションでピッカーの状態を更新する前には、ピッカーがbalancer.ErrNoSubConnAvailableを返す
+//balancer.ErrNoSubAvailableはピッカーが利用可能なサブコネクションを待つまで、クライアントのRPCをブロックするようにgRPCに指示する
 func TestPickerNoSubConnAvailable(t *testing.T) {
 	picker := &loadbalance.Picker{}
 	for _, method := range []string{
@@ -28,6 +30,8 @@ func TestPickerNoSubConnAvailable(t *testing.T) {
 	}
 }
 
+//ピッカーがサブコネクションから選択することをテスト
+//ピッカーがProduce呼び出しのためにリーダーのサブコネクションを選択する
 func TestPickerProducesToLeader(t *testing.T) {
 	picker, subConns := setupTest()
 	info := balancer.PickInfo{
@@ -40,6 +44,7 @@ func TestPickerProducesToLeader(t *testing.T) {
 	}
 }
 
+//ピッカーがConsume呼び出しのためにラウンドロビンでフォロワーのサブコネクションを選択
 func TestPickerConsumesFromFollowers(t *testing.T) {
 	picker, subConns := setupTest()
 	info := balancer.PickInfo{
@@ -52,6 +57,8 @@ func TestPickerConsumesFromFollowers(t *testing.T) {
 	}
 }
 
+//いくつかのモックサブコネクションを持つテスト用のピッカーを構築
+//リゾルバの集まりと同じ属性を持つアドレスを含むビルド情報でピッカーを作成
 func setupTest() (*loadbalance.Picker, []*subConn) {
 	var subConns []*subConn
 	buildInfo := base.PickerBuildInfo{

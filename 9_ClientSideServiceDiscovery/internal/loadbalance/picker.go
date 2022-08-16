@@ -9,6 +9,10 @@ import (
 	"google.golang.org/grpc/balancer/base"
 )
 
+//ピッカーでリクエストの送信先を決めて、バランスさせる
+//リゾルバが発見したサーバーの中からRPCを処理するサーバーを選ぶため、ピッカーと呼ばれる
+
+//リゾルバ同様にビルダパターンを使う
 var _ base.PickerBuilder = (*Picker)(nil)
 
 type Picker struct {
@@ -37,8 +41,11 @@ func (p *Picker) Build(buildInfo base.PickerBuildInfo) balancer.Picker {
 	return p
 }
 
+//Pickメソッドを定義
 var _ balancer.Picker = (*Picker)(nil)
 
+//RPCのメソッドからProduce, Consumeか、リーダーサブコネクションとフォロワーサブコネクションのどちらを選択すべきかを知ることができる
+///ラウンドロビンアルゴリズムを使って、フォロワー間でConsumeとConsumeStreamのRPC呼び出しをバランスさせる
 func (p *Picker) Pick(info balancer.PickInfo) (
 	balancer.PickResult, error) {
 	p.mu.RLock()
@@ -63,6 +70,7 @@ func (p *Picker) nextFollower() balancer.SubConn {
 	return p.followers[idx]
 }
 
+//ピッカーをgRPCに登録
 func init() {
 	balancer.Register(
 		base.NewBalancerBuilder(Name, &Picker{}, base.Config{}),

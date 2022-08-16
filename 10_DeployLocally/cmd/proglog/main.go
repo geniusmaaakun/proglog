@@ -13,24 +13,31 @@ import (
 	"github.com/travisjeffery/proglog/internal/config"
 )
 
+//CLIツール
+//クライアント
+
 func main() {
 	cli := &cli{}
 
 	cmd := &cobra.Command{ // <--
-		Use:     "proglog",       // <--
+		Use: "proglog", // <--
+		//設定
 		PreRunE: cli.setupConfig, // <--
-		RunE:    cli.run,         // <--
+		//主要なロジックを入れる
+		RunE: cli.run, // <--
 	} // <--
 
+	//フラグの設定
 	if err := setupFlags(cmd); err != nil {
 		log.Fatal(err)
 	}
-
+	//フラグを宣言後、プロセスの引数を解析し、コマンドツリーを検索し、コマンドを実行
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }
 
+//全コマンドに共通するロジックやデータを入れる
 type cli struct {
 	cfg cfg
 }
@@ -41,6 +48,7 @@ type cfg struct {
 	PeerTLSConfig   config.TLSConfig
 }
 
+//フラグの設定
 func setupFlags(cmd *cobra.Command) error {
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -81,9 +89,12 @@ func setupFlags(cmd *cobra.Command) error {
 		"",
 		"Path to peer certificate authority.")
 
+	//viperで設定を一括管理
 	return viper.BindPFlags(cmd.Flags())
 }
 
+//設定を読み込んで、エージェントの設定を準備する
+//cobraはRunEを実行する前にsetupConfigを呼ぶ
 func (c *cli) setupConfig(cmd *cobra.Command, args []string) error {
 	configFile, err := cmd.Flags().GetString("config-file")
 	if err != nil {
@@ -138,6 +149,7 @@ func (c *cli) setupConfig(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+//エージェントの作成、OSからのシグナル処理、OSがプログラムを終了させる場合、エージェントをグレースフルシャットダウンさせる
 func (c *cli) run(cmd *cobra.Command, args []string) error {
 	agent, err := agent.New(c.cfg.Config)
 	if err != nil {

@@ -76,6 +76,7 @@ func New(config Config) (*Agent, error) {
 	return a, nil
 }
 
+//変更
 func (a *Agent) setupMux() error {
 	addr, err := net.ResolveTCPAddr("tcp", a.Config.BindAddr)
 	if err != nil {
@@ -94,6 +95,7 @@ func (a *Agent) setupMux() error {
 	return nil
 }
 
+//変更
 func (a *Agent) setupLogger() error {
 	logger, err := zap.NewDevelopment()
 	if err != nil {

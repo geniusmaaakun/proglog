@@ -41,6 +41,7 @@ func TestMultipleNodes(t *testing.T) {
 		config.Raft.ElectionTimeout = 100 * time.Millisecond
 		config.Raft.LeaderLeaseTimeout = 100 * time.Millisecond
 		config.Raft.CommitTimeout = 5 * time.Millisecond
+		//ログ設定を更新して、アドレスを設定
 		config.Raft.BindAddr = ln.Addr().String()
 
 		if i == 0 {

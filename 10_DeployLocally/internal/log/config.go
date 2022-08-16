@@ -2,6 +2,8 @@ package log
 
 import "github.com/hashicorp/raft"
 
+//完全修飾ドメイン名でRaftを公開
+
 type Config struct {
 	Raft struct {
 		raft.Config

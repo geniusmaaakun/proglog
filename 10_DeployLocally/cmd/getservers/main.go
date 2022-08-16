@@ -11,6 +11,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+//サーバーの一覧取得する
+
 func main() {
 	addr := flag.String("addr", ":8400", "service address")
 	flag.Parse()

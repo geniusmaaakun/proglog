@@ -85,6 +85,8 @@ func TestMultipleNodes(t *testing.T) {
 		}, 500*time.Millisecond, 50*time.Millisecond)
 	}
 
+	//クラスタのサーバーを全て返す
+	//クラスタの中のリーダーを探す
 	servers, err := logs[0].GetServers()
 	require.NoError(t, err)
 	require.Equal(t, 3, len(servers))

@@ -242,6 +242,8 @@ func (l *DistributedLog) Close() error {
 	return l.log.Close()
 }
 
+//Raftの設定は、クラスタ内のサーバーで構成され、各サーバーのID、アドレス、投票券が含まれている
+//RaftのRaft.server型からのデータっをAPI応答するための*api.Server型へ変換する
 func (l *DistributedLog) GetServers() ([]*api.Server, error) {
 	future := l.raft.GetConfiguration()
 	if err := future.Error(); err != nil {

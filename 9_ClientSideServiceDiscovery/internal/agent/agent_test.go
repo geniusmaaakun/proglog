@@ -129,6 +129,7 @@ func TestAgent(t *testing.T) {
 	require.Equal(t, got, want)
 }
 
+//更新
 func client(
 	t *testing.T,
 	agent *agent.Agent,
@@ -139,6 +140,7 @@ func client(
 	rpcAddr, err := agent.Config.RPCAddr()
 	require.NoError(t, err)
 
+	//自分たちのリゾルバを使う
 	conn, err := grpc.Dial(fmt.Sprintf(
 		"%s:///%s",
 		loadbalance.Name,

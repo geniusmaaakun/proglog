@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+//更新
 type Config struct {
 	CommitLog   CommitLog
 	Authorizer  Authorizer
@@ -179,6 +180,8 @@ func (s *grpcServer) ConsumeStream(
 	}
 }
 
+//サーバーを取得できる
+//エンドポイントの作成
 func (s *grpcServer) GetServers(
 	ctx context.Context, req *api.GetServersRequest,
 ) (*api.GetServersResponse, error) {

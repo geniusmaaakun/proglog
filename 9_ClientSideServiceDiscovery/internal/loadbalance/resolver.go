@@ -14,6 +14,9 @@ import (
 	api "github.com/travisjeffery/proglog/api/v1"
 )
 
+//Builder, Resolverインターフェースを実装する型
+//clientConnコネクションはユーザーのクライアントコネクションでgRPCはこれをリゾルバに渡して、リゾルバが発見したサーバーで更新するようにする
+//resolverConnはリゾルバ自身のサーバーへのクライアントコネクションなのでGetServersを呼び出してサーバーを取得する
 type Resolver struct {
 	mu            sync.Mutex
 	clientConn    resolver.ClientConn
@@ -22,8 +25,11 @@ type Resolver struct {
 	logger        *zap.Logger
 }
 
+//BuilderインターフェースはBuildとSchemeの二つから構成される
 var _ resolver.Builder = (*Resolver)(nil)
 
+//サーバーを発見できるリゾルバを構築するのに必要なデータ（ターゲットアドレスなど）とリゾルバが発見したサーバーで更新するクライアントコネクションを受け取る
+//サーバーへのクライアントコネクションを設定する
 func (r *Resolver) Build(
 	target resolver.Target,
 	cc resolver.ClientConn,
@@ -52,16 +58,22 @@ func (r *Resolver) Build(
 
 const Name = "proglog"
 
+//リゾルバのスキーム識別子を返す
 func (r *Resolver) Scheme() string {
 	return Name
 }
 
+//リゾルバをgRPCに登録
 func init() {
 	resolver.Register(&Resolver{})
 }
 
+//resolverインターフェースはResolveNowとCloseで構成される
 var _ resolver.Resolver = (*Resolver)(nil)
 
+//ターゲットを解決し、サーバーを発見し、サーバーとのクライアントコネクションを更新する
+//リゾルバがサーバーを発見する方法は、リゾルバと扱うサービスによって異なる
+//gRPCクライアントを作成し、jクラスタのサーバーを取得するためにGetServersを呼び出す
 func (r *Resolver) ResolveNow(resolver.ResolveNowOptions) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -76,6 +88,7 @@ func (r *Resolver) ResolveNow(resolver.ResolveNowOptions) {
 		)
 		return
 	}
+	//ロードバランサが選択できるサーバーを知らせるために、スライスで状態を更新
 	var addrs []resolver.Address
 	for _, server := range res.Servers {
 		addrs = append(addrs, resolver.Address{
@@ -86,12 +99,14 @@ func (r *Resolver) ResolveNow(resolver.ResolveNowOptions) {
 			),
 		})
 	}
+	//サーバーを発見したらコネクションを更新
 	r.clientConn.UpdateState(resolver.State{
 		Addresses:     addrs,
 		ServiceConfig: r.serviceConfig,
 	})
 }
 
+//リゾルバを閉じる
 func (r *Resolver) Close() {
 	if err := r.resolverConn.Close(); err != nil {
 		r.logger.Error(

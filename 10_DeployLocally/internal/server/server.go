@@ -1,5 +1,7 @@
 package server
 
+//ヘルスチェックを公開
+
 import (
 	"context"
 	"time"
@@ -93,6 +95,8 @@ func NewGRPCServer(config *Config, grpcOpts ...grpc.ServerOption) (
 
 	gsrv := grpc.NewServer(grpcOpts...)
 
+	//ヘルスチェックサーバー
+	//接続を受け入れる準備ができていることをプローブが知ることができるように設定
 	hsrv := health.NewServer()
 	hsrv.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
 	healthpb.RegisterHealthServer(gsrv, hsrv)

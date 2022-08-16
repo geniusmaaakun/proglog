@@ -32,12 +32,13 @@ func TestResolver(t *testing.T) {
 	serverCreds := credentials.NewTLS(tlsConfig)
 
 	srv, err := server.NewGRPCServer(&server.Config{
-		GetServerer: &getServers{},
+		GetServerer: &getServers{}, //モックできるようにする
 	}, grpc.Creds(serverCreds))
 	require.NoError(t, err)
 
 	go srv.Serve(l)
 
+	//テスト用のリゾルバを作成して、構築し、ターゲットエンドポイントを設定したサーバーを指すように設定していく
 	conn := &clientConn{}
 	tlsConfig, err = config.SetupTLSConfig(config.TLSConfig{
 		CertFile:      config.RootClientCertFile,
@@ -51,6 +52,7 @@ func TestResolver(t *testing.T) {
 	opts := resolver.BuildOptions{
 		DialCreds: clientCreds,
 	}
+	//リゾルバは、サーバーを解決して、サーバーのアドレスでクライアントコネクションを更新する
 	r := &loadbalance.Resolver{}
 	_, err = r.Build(
 		resolver.Target{
@@ -61,6 +63,8 @@ func TestResolver(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	//リゾルバがクライアントコネクションを期待したサーバーとデータで更新したことを確認
+	//リゾルバが2つサーバーを見つけ、9001ポートをリーダーと認識することを期待
 	wantState := resolver.State{
 		Addresses: []resolver.Address{{
 			Addr:       "localhost:9001",
@@ -77,6 +81,7 @@ func TestResolver(t *testing.T) {
 	require.Equal(t, wantState, conn.state)
 }
 
+//見つけるべきサーバーをモック
 type getServers struct{}
 
 func (s *getServers) GetServers() ([]*api.Server, error) {
