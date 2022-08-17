@@ -29,6 +29,7 @@ func newHTTPServer() *httpServer {
 	}
 }
 
+//リクエストとレスポンスの型
 type ProduceRequest struct {
 	Record Record `json:"record"`
 }

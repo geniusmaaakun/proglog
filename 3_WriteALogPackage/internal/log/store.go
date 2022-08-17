@@ -43,13 +43,18 @@ func newStore(f *os.File) (*store, error) {
 }
 
 //与えられたバイトをストアに永続化する
+//書き込んだバイト数、書き込み開始した位置を返す
 func (s *store) Append(p []byte) (n uint64, pos uint64, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	pos = s.size
+	//bigEndianで書き込む レコード長さを書き込む
+	//何バイトと読み出せばいいかわかるようにしている
 	if err := binary.Write(s.buf, enc, uint64(len(p))); err != nil {
 		return 0, 0, err
 	}
+	//直接ではなくバッファ付きライターに書き込む
+	//小さなレコードを多数書き込む場合は有効
 	w, err := s.buf.Write(p)
 	if err != nil {
 		return 0, 0, err
@@ -71,6 +76,7 @@ func (s *store) Read(pos uint64) ([]byte, error) {
 	}
 	//レコード全体を読み込むためのバッファを確保し、読み込む
 	size := make([]byte, lenWidth)
+	//posの位置から読み込む。レコードサイズを取得
 	if _, err := s.File.ReadAt(size, int64(pos)); err != nil {
 		return nil, err
 	}

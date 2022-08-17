@@ -18,7 +18,7 @@ type segment struct {
 	store                  *store
 	index                  *index
 	baseOffset, nextOffset uint64 //相対的なオフセット計算のオフセット、新たなレコードを追加する際のオフセット
-	config                 Config
+	config                 Config //セグメントが最大化を確認するために必要
 }
 
 //ログは現在のアクティブセグメントが最大サイズに達した時など、新たなセグメントを追加する必要がある時に呼び出す
