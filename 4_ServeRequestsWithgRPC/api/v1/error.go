@@ -7,6 +7,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+//gRPCでのエラー処理
+
 type ErrOffsetOutOfRange struct {
 	Offset uint64
 }

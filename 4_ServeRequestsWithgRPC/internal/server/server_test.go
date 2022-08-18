@@ -32,6 +32,7 @@ func TestServer(t *testing.T) {
 	}
 }
 
+//各テストケースを設定するヘルパー
 func setupTest(t *testing.T, fn func(*Config)) (
 	client api.LogClient,
 	cfg *Config,
@@ -39,14 +40,18 @@ func setupTest(t *testing.T, fn func(*Config)) (
 ) {
 	t.Helper()
 
+	//0番ポートにすると自動で割り当てられる
 	l, err := net.Listen("tcp", ":0")
 	require.NoError(t, err)
 
+	//クライアント作成
+	//サーバーの安全でない（暗号化されていない）コネクションを使うOP
 	clientOptions := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials())}
 	cc, err := grpc.Dial(l.Addr().String(), clientOptions...)
 	require.NoError(t, err)
 
+	//ログを作成
 	dir, err := os.MkdirTemp("", "server-test")
 	require.NoError(t, err)
 
@@ -59,13 +64,16 @@ func setupTest(t *testing.T, fn func(*Config)) (
 	if fn != nil {
 		fn(cfg)
 	}
+	//サーバー作成
 	server, err := NewGRPCServer(cfg)
 	require.NoError(t, err)
 
+	//ゴルーチンでリクエストの処理。listenerを渡す
 	go func() {
 		server.Serve(l)
 	}()
 
+	//gRPCにコネクションするクライアント
 	client = api.NewLogClient(cc)
 
 	return client, cfg, func() {
@@ -79,10 +87,12 @@ func setupTest(t *testing.T, fn func(*Config)) (
 func testProduceConsume(t *testing.T, client api.LogClient, config *Config) {
 	ctx := context.Background()
 
+	//書き込むレコード
 	want := &api.Record{
 		Value: []byte("hello world"),
 	}
 
+	//gROCにアクセス
 	produce, err := client.Produce(
 		ctx,
 		&api.ProduceRequest{
@@ -92,14 +102,17 @@ func testProduceConsume(t *testing.T, client api.LogClient, config *Config) {
 	require.NoError(t, err)
 	want.Offset = produce.Offset
 
+	//gROCにアクセス。読み込み
 	consume, err := client.Consume(ctx, &api.ConsumeRequest{
 		Offset: produce.Offset,
 	})
 	require.NoError(t, err)
+	//書き込みと読み込みが一致するか
 	require.Equal(t, want.Value, consume.Record.Value)
 	require.Equal(t, want.Offset, consume.Record.Offset)
 }
 
+//クライアントがログの境界を超えて読み出すとき、エラーを返す
 func testConsumePastBoundary(
 	t *testing.T,
 	client api.LogClient,
@@ -127,6 +140,7 @@ func testConsumePastBoundary(
 	}
 }
 
+//ストリーミング版
 func testProduceConsumeStream(
 	t *testing.T,
 	client api.LogClient,
@@ -147,10 +161,12 @@ func testProduceConsumeStream(
 		require.NoError(t, err)
 
 		for offset, record := range records {
+			//ストリームに対して送信
 			err = stream.Send(&api.ProduceRequest{
 				Record: record,
 			})
 			require.NoError(t, err)
+			//受信
 			res, err := stream.Recv()
 			require.NoError(t, err)
 			if res.Offset != uint64(offset) {
