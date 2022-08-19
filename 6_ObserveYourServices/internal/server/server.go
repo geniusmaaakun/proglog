@@ -63,7 +63,7 @@ func NewGRPCServer(config *Config, grpcOpts ...grpc.ServerOption) (
 		grpc_zap.WithDurationField(
 			func(duration time.Duration) zapcore.Field {
 				return zap.Int64(
-					"grpc.time_ns",
+					"grpc.time_ns", //ナノ秒単位で記録
 					duration.Nanoseconds(),
 				)
 			},
